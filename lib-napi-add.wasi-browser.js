@@ -1,16 +1,16 @@
 import {
-  instantiateNapiModuleSync as __emnapiInstantiateNapiModuleSync,
-  getDefaultContext as __emnapiGetDefaultContext,
-  WASI as __WASI,
   createOnMessage as __wasmCreateOnMessageForFsProxy,
+  getDefaultContext as __emnapiGetDefaultContext,
+  instantiateNapiModuleSync as __emnapiInstantiateNapiModuleSync,
+  WASI as __WASI,
 } from '@napi-rs/wasm-runtime'
 
-import __wasmUrl from './package-template.wasm32-wasi.wasm?url'
 
 const __wasi = new __WASI({
   version: 'preview1',
 })
 
+const __wasmUrl = new URL('./lib-napi-add.wasm32-wasi.wasm', import.meta.url).href
 const __emnapiContext = __emnapiGetDefaultContext()
 
 const __sharedMemory = new WebAssembly.Memory({
@@ -46,11 +46,12 @@ const {
     return importObject
   },
   beforeInit({ instance }) {
-    __napi_rs_initialize_modules(instance)
+    for (const name of Object.keys(instance.exports)) {
+      if (name.startsWith('__napi_register__')) {
+        instance.exports[name]()
+      }
+    }
   },
 })
-
-function __napi_rs_initialize_modules(__napiInstance) {
-  __napiInstance.exports['__napi_register__plus_100_0']?.()
-}
+export default __napiModule.exports
 export const plus100 = __napiModule.exports.plus100
